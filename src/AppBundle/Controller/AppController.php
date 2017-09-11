@@ -54,7 +54,7 @@ class AppController extends Controller
 
 		$app = new Apps();
 		$app->setAppName($appName);
-		$app->setAppConfig(json_encode($appConfig));
+		$app->setAppConfig($appConfig);
 		try{
 			$this->applyToDBase($app);
 		}	
@@ -64,6 +64,47 @@ class AppController extends Controller
 		}
 
 		return $this->response('Success', "App $appName has been created");
+	}
+
+	/**
+	 * @Route("/gameList/{appName}")
+	 */
+	public function gameList($appName)
+	{
+		$data = $games = [];
+		if (!$appName)
+		{
+			return $this->response('failed', 'The app name should not be empty');
+		}
+
+		$app = $this->getDoctrine()
+    			->getRepository('AppBundle:Apps')
+			->find($appName);
+
+		if (!$app)
+		{
+			return $this->response('failed', 'The app name has not been added.');
+		}
+
+		foreach ($app->getAppConfig() as $gameName => $sections)
+		{
+			$game = [];
+			$game['key'] = $gameName;
+			$game['label']  = $this->getGameLabel($gameName);
+			$games []= $game;
+			
+		}
+		
+		$data['data'] = $games;
+		return new JsonResponse($data);;
+	}
+
+	private function getGameLabel($gameName)
+	{
+		return $this->getDoctrine()
+			->getRepository('AppBundle:Games')
+			->find($gameName)
+			->getLabel();
 	}
 }
 ?>

@@ -30,6 +30,16 @@ class Apps
 	{
 		$this->appConfig = $config;
 	}
+	
+	public function getAppName()
+	{
+		return $this->appName;
+	}
+
+	public function getAppConfig()
+	{
+		return $this->appConfig;
+	}
 }
 ?>
 
