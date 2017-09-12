@@ -4,15 +4,18 @@ namespace AppBundle\Controller;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use AppBundle\Entity\Sections;
 use AppBundle\Entity\Games;
 use AppBundle\Entity\Apps;
+use AppBundle\Service\AppModule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 class AppController extends Controller
 {
+
 	private function response($status, $report)
 	{
 		return new JsonResponse(['Status' => $status, 'Report' => $report]);
@@ -35,7 +38,7 @@ class AppController extends Controller
 	/**
 	 * @Route("/create/{appName}")
 	 */
-	public function createApp($appName)
+	public function createApp(AppModule $appModule,  $appName)
 	{
 		$appConig = [];
 		$games = $this->getDoctrine()
@@ -50,13 +53,11 @@ class AppController extends Controller
 		foreach ($games as $game)
 		{
 			$appConfig[$game->getGame()]['Sections'] = $game->getSections();
+			$appConfig[$game->getGame()]['Enable'] = true;
 		}
 
-		$app = new Apps();
-		$app->setAppName($appName);
-		$app->setAppConfig($appConfig);
 		try{
-			$this->applyToDBase($app);
+			$appModule->addNewApp($appName, $appConfig);
 		}	
 		catch (\Doctrine\DBAL\DBALException $e)
 		{
@@ -69,7 +70,7 @@ class AppController extends Controller
 	/**
 	 * @Route("/gameList/{appName}")
 	 */
-	public function gameList($appName)
+	public function gameList(AppModule $appModule, $appName)
 	{
 		$data = $games = [];
 		if (!$appName)
@@ -77,10 +78,7 @@ class AppController extends Controller
 			return $this->response('failed', 'The app name should not be empty');
 		}
 
-		$app = $this->getDoctrine()
-    			->getRepository('AppBundle:Apps')
-			->find($appName);
-
+		$app = $appModule->findApp($appName);
 		if (!$app)
 		{
 			return $this->response('failed', 'The app name has not been added.');
@@ -97,6 +95,26 @@ class AppController extends Controller
 		
 		$data['data'] = $games;
 		return new JsonResponse($data);;
+	}
+
+	/**
+	 * @Route("/flipGame/{appName}")
+	 */
+	public function flipGame(AppModule $appModule, $appName, Request $request)
+	{
+		$params = array();
+		$app = $appModule->findApp($appName);
+		$content = $request->getContent();
+		if (!empty($content))
+		{
+			$games = json_decode($content, true); // 2nd param to get as array
+			foreach ($games as $gameName => $status)
+			{
+				
+			}
+			
+		}
+		return new JsonResponse($params);
 	}
 
 	private function getGameLabel($gameName)
