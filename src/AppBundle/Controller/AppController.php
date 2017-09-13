@@ -10,6 +10,7 @@ use AppBundle\Entity\Sections;
 use AppBundle\Entity\Games;
 use AppBundle\Entity\Apps;
 use AppBundle\Service\AppModule;
+use AppBundle\Service\GameModule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
@@ -21,29 +22,13 @@ class AppController extends Controller
 		return new JsonResponse(['Status' => $status, 'Report' => $report]);
 	}
 
-	private function applyToDBase($object)
-	{
-		try{
-			$em = $this->getDoctrine()->getManager();
-			$em->persist($object);
-			$em->flush();
-		}
-		catch (\Doctrine\DBAL\DBALException $e)
-		{
-			throw $e;
-		}
-		
-	}
-
 	/**
 	 * @Route("/create/{appName}")
 	 */
-	public function createApp(AppModule $appModule,  $appName)
+	public function createApp(GameModule $gameModule, AppModule $appModule,  $appName)
 	{
 		$appConig = [];
-		$games = $this->getDoctrine()
-			->getRepository('AppBundle:Games')
-			->findAll();
+		$games = $gameModule->getAllGames();
 
 		if (!$games)
 		{

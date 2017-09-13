@@ -37,12 +37,4 @@ class AppModule
     			->getRepository('AppBundle:Apps')
 			->find($appName);
 	}
-
-
-	public function getAppConfig($appName)
-	{
-		return $this->em
-			->getRepository('AppBundle:Apps')
-			->find($appName);
-	}
 }
