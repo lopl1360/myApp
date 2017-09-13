@@ -30,6 +30,16 @@ class Sections
 	{
 		$this->labelString = $label;
 	}
+
+	public function getKey()
+	{
+		return $this->keyString;
+	}
+
+	public function getLabel()
+	{
+		return $this->labelString;
+	}
 }
 ?>
 

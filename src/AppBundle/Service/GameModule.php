@@ -21,4 +21,16 @@ class GameModule
 			->getRepository('AppBundle:Games')
 			->findAll();
 	}
+
+	public function findGame($game)
+	{
+		return $this->em
+			->getRepository('AppBundle:Games')
+			->find($game);
+	} 
+
+	public function getLabel($game)
+	{
+		return $this->findGame($game)->getLabel();
+	}
 }

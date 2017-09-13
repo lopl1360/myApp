@@ -11,6 +11,7 @@ use AppBundle\Entity\Games;
 use AppBundle\Entity\Apps;
 use AppBundle\Service\AppModule;
 use AppBundle\Service\GameModule;
+use AppBundle\Service\SectionModule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
@@ -88,18 +89,52 @@ class AppController extends Controller
 	public function flipGame(AppModule $appModule, $appName, Request $request)
 	{
 		$params = array();
-		$app = $appModule->findApp($appName);
 		$content = $request->getContent();
 		if (!empty($content))
 		{
 			$games = json_decode($content, true); // 2nd param to get as array
 			foreach ($games as $gameName => $status)
 			{
-				
+				$appModule->updateGameStatus($appName, $gameName, $status);	
 			}
 			
 		}
 		return new JsonResponse($params);
+	}
+
+	/**
+	 * @Route("/sections/{appName}")
+	 */
+	public function getActiveSections(GameModule $gameModule, SectionModule $sectionModule, AppModule $appModule, $appName)
+	{
+		$sections = $activeSections = $activesection = $activeGame = $activeGames = $data = [];
+		$enabledGames = $appModule->getEnabledGames($appName);
+		foreach ($enabledGames as $game => $config)
+		{
+			foreach ($config['Sections'] as $section)
+			{
+					$sections[$section] []= $game;
+			}
+		}
+
+		foreach ($sections as $section => $games)
+		{
+			$activeGames = $activeGame = [];
+			$activeSection['key'] = $section;
+			$activeSection['label'] = $sectionModule->getLabel($section);
+			foreach ($games as $game)
+			{
+				$activeGame['key'] = $game;
+				$activeGame['label'] = $gameModule->getLabel($game);
+				$activeGames []= $activeGame;	
+			}
+
+			$activeSection['Games'] = $activeGames;
+			$activeSections []= $activeSection;
+		}
+
+		$data['data'] = $activeSections;
+		return new JsonResponse($data);
 	}
 
 	private function getGameLabel($gameName)

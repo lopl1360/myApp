@@ -37,4 +37,47 @@ class AppModule
     			->getRepository('AppBundle:Apps')
 			->find($appName);
 	}
+
+	public function updateAppConfig(Apps $app, $config)
+	{
+		try{
+			$app->setAppConfig($config);
+			$this->em->persist($app);
+			$this->em->flush();
+		}
+		catch (\Doctrine\DBAL\DBALException $e)
+		{
+			throw $e;
+		}
+	}
+
+	public function updateGameStatus($appName, $gameName, $newStatus)
+	{
+		$app = $this->findApp($appName);
+		$appConfig = $app->getAppConfig();
+		foreach ($appConfig as $game => &$gameConfig)
+		{
+			if ($game == $gameName)
+			{
+				$gameConfig['Enable'] = $newStatus ? true : false;
+			}
+		}
+
+		$this->updateAppConfig($app, $appConfig);
+	}
+
+	public function getEnabledGames($appName)
+	{
+		$app = $this->findApp($appName);
+		$appConfig = $app->getAppConfig();
+		foreach ($appConfig as $game => $gameConfig)
+		{
+			if (!$gameConfig['Enable'])
+			{
+				unset($appConfig[$game]);
+			}
+		}
+
+		return $appConfig;
+	}
 }
