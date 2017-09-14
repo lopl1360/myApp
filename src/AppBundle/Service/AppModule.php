@@ -51,9 +51,8 @@ class AppModule
 		}
 	}
 
-	public function updateGameStatus($appName, $gameName, $newStatus)
+	public function updateGameStatus(Apps $app, $gameName, $newStatus)
 	{
-		$app = $this->findApp($appName);
 		$appConfig = $app->getAppConfig();
 		foreach ($appConfig as $game => &$gameConfig)
 		{
@@ -66,9 +65,8 @@ class AppModule
 		$this->updateAppConfig($app, $appConfig);
 	}
 
-	public function getEnabledGames($appName)
+	public function getEnabledGames(Apps $app)
 	{
-		$app = $this->findApp($appName);
 		$appConfig = $app->getAppConfig();
 		foreach ($appConfig as $game => $gameConfig)
 		{

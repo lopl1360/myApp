@@ -14,6 +14,7 @@ use AppBundle\Service\GameModule;
 use AppBundle\Service\SectionModule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AppController extends Controller
 {
@@ -23,17 +24,38 @@ class AppController extends Controller
 		return new JsonResponse(['Status' => $status, 'Report' => $report]);
 	}
 
+	private function getAppObject(AppModule $appModule, $appName)
+	{
+		if (!$appName)
+		{
+			throw new \Exception('The app name should not be empty');
+		}
+
+		$app = $appModule->findApp($appName);
+		if (!$app)
+		{
+			throw new \Exception('This app does not exist.');
+		}
+
+		return $app;
+	}
+
 	/**
 	 * @Route("/create/{appName}")
 	 */
 	public function createApp(GameModule $gameModule, AppModule $appModule,  $appName)
 	{
+		if (!$appName)
+		{
+			throw new \Exception('The app name should not be empty');
+		}
+
 		$appConig = [];
 		$games = $gameModule->getAllGames();
 
 		if (!$games)
 		{
-			throw $this->respond('failed', 'No game found');
+			throw new \Exception('No game found');
 		}
 
 		foreach ($games as $game)
@@ -47,7 +69,7 @@ class AppController extends Controller
 		}	
 		catch (\Doctrine\DBAL\DBALException $e)
 		{
-			return $this->response('failed', "App $appName has NOT been created. Message:" . $e->getMessage());
+			throw new \Exception("App $appName has NOT been created. Message:" . $e->getMessage());
 		}
 
 		return $this->response('Success', "App $appName has been created");
@@ -56,25 +78,15 @@ class AppController extends Controller
 	/**
 	 * @Route("/gameList/{appName}")
 	 */
-	public function gameList(AppModule $appModule, $appName)
+	public function gameList(AppModule $appModule, GameModule $gameModule, $appName)
 	{
 		$data = $games = [];
-		if (!$appName)
-		{
-			return $this->response('failed', 'The app name should not be empty');
-		}
-
-		$app = $appModule->findApp($appName);
-		if (!$app)
-		{
-			return $this->response('failed', 'The app name has not been added.');
-		}
-
+		$app = $this->getAppObject($appModule, $appName);
 		foreach ($app->getAppConfig() as $gameName => $sections)
 		{
 			$game = [];
 			$game['key'] = $gameName;
-			$game['label']  = $this->getGameLabel($gameName);
+			$game['label']  = $gameModule->getLabel($gameName);
 			$games []= $game;
 			
 		}
@@ -89,17 +101,18 @@ class AppController extends Controller
 	public function flipGame(AppModule $appModule, $appName, Request $request)
 	{
 		$params = array();
+		$app = $this->getAppObject($appModule, $appName);
 		$content = $request->getContent();
 		if (!empty($content))
 		{
 			$games = json_decode($content, true); // 2nd param to get as array
 			foreach ($games as $gameName => $status)
 			{
-				$appModule->updateGameStatus($appName, $gameName, $status);	
+				$appModule->updateGameStatus($app, $gameName, $status);	
 			}
 			
 		}
-		return new JsonResponse($params);
+		return new JsonResponse($app->getAppConfig());
 	}
 
 	/**
@@ -107,8 +120,9 @@ class AppController extends Controller
 	 */
 	public function getActiveSections(GameModule $gameModule, SectionModule $sectionModule, AppModule $appModule, $appName)
 	{
+		$app = $this->getAppObject($appModule, $appName);
 		$sections = $activeSections = $activesection = $activeGame = $activeGames = $data = [];
-		$enabledGames = $appModule->getEnabledGames($appName);
+		$enabledGames = $appModule->getEnabledGames($app);
 		foreach ($enabledGames as $game => $config)
 		{
 			foreach ($config['Sections'] as $section)
@@ -135,14 +149,6 @@ class AppController extends Controller
 
 		$data['data'] = $activeSections;
 		return new JsonResponse($data);
-	}
-
-	private function getGameLabel($gameName)
-	{
-		return $this->getDoctrine()
-			->getRepository('AppBundle:Games')
-			->find($gameName)
-			->getLabel();
 	}
 }
 ?>
